@@ -1,0 +1,20 @@
+port: 3003
+database:
+  mongo:
+    url: sensitive
+routing:
+  base: "api"
+globalExceptionFilter: true
+jsonLimit: 2mb
+middlewares:
+  cors:
+    activate: true
+    methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowedHeaders:
+      - "Content-Type"
+      - "Authorization"
