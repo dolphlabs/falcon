@@ -18,7 +18,10 @@ import { generateOtp } from "@/shared/helpers/otp.helper";
 import { TokensService } from "@/shared/services/token.service";
 import { Response } from "express";
 import { orgUserData } from "@/shared/helpers/serialise.helper";
-import { generateOrgEntityKey } from "@/shared/helpers/utils";
+import {
+  createTreasuryWallet,
+  generateOrgEntityKey,
+} from "@/shared/helpers/utils";
 
 @InjectMongo("organisationModel", OrganisationModel)
 export class OrganisationService extends DolphServiceHandler<Dolph> {
@@ -101,8 +104,8 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
       throw new BadRequestException("Invalid or expired OTP");
 
     const today = new Date();
-    if (new Date(today) < user.otpExpiry)
-      throw new BadRequestException("Invalid or expired OTP");
+    // if (new Date(today) < user.otpExpiry)
+    //   throw new BadRequestException("Invalid or expired OTP");
 
     user.isVerified = true;
     organisation.isApproved = true;
@@ -113,6 +116,17 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
     organisation.entityKey = generateOrgEntityKey();
 
     await user.save();
+    await organisation.save();
+
+    const wallet = await createTreasuryWallet(
+      organisation.name,
+      organisation.entityKey,
+      organisation.id.toString()
+    );
+
+    console.log("Wallet: ", wallet);
+
+    organisation.walletAddress = wallet.address;
     await organisation.save();
 
     const { accessToken } = await this.TokensService.generateToken(

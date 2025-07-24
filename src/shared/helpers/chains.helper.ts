@@ -1,6 +1,7 @@
 import type { Hex } from "viem";
 
 export const blockChains: string[] = [
+  "SOLANA_DEVNET",
   "ETH_SEPOLIA",
   "AVAX_FUJI",
   "BASE_SEPOLIA",
@@ -9,7 +10,6 @@ export const blockChains: string[] = [
   "ARBITRUM_SEPOLIA",
   "WORLDCHAIN_SEPOLIA",
   "OPTIMISM_SEPOLIA",
-  "SOLANA_DEVNET",
   "CODEX_TESTNET",
   "UNICHAIN_SEPOLIA",
   "POLYGON_AMOY",

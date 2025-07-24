@@ -24,7 +24,8 @@ const envSchema = Joi.object()
     SMTP_PASS_PROD: Joi.string().description("SMTP prod password"),
     SMTP_SERVICE_PROD: Joi.string().description("SMTP prod service"),
     MONGO_URL: Joi.string().description("MONGO Connection string").required(),
-    CIRCLE_KEY: Joi.string().description("Circle APi Key").required(),
+    CIRCLE_KEY_DEV: Joi.string().description("Circle APi Key").required(),
+    CIRCLE_KEY_PROD: Joi.string().description("Circle APi Key"),
     SOLANA_PRIVATE_KEY: Joi.string()
       .description("Solana private key")
       .required(),
@@ -70,7 +71,8 @@ export default {
     url: envVars.MONGO_URL,
   },
   circle: {
-    apiKey: envVars.CIRCLE_KEY,
+    apiKeyTest: envVars.CIRCLE_KEY_DEV,
+    apiKeyProd: envVars.CIRCLE_KEY_PROD,
     entityKey: envVars.CIRCLE_ENTITY_KEY,
   },
   solana: {
