@@ -17,9 +17,15 @@
     "clean": "rm -r app && rm -r logs"
   },
   "dependencies": {
+    "@circle-fin/developer-controlled-wallets": "^8.4.0",
+    "@circle-fin/usdckit": "^0.18.0",
+    "@coral-xyz/anchor": "^0.31.1",
     "@dolphjs/dolph": "^1.4.3",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.98.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "ethers": "^6.15.0",
     "handlebars": "^4.7.8",
     "mjml": "^4.15.3",
     "mongoose": "^8.16.4",

@@ -18,6 +18,7 @@ import { generateOtp } from "@/shared/helpers/otp.helper";
 import { TokensService } from "@/shared/services/token.service";
 import { Response } from "express";
 import { orgUserData } from "@/shared/helpers/serialise.helper";
+import { generateOrgEntityKey } from "@/shared/helpers/utils";
 
 @InjectMongo("organisationModel", OrganisationModel)
 export class OrganisationService extends DolphServiceHandler<Dolph> {
@@ -107,6 +108,9 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
     organisation.isApproved = true;
     organisation.noOfEmployees = 1;
     organisation.admins = [user._id];
+
+    // Todo: encrypt this key and decrypt it when needed
+    organisation.entityKey = generateOrgEntityKey();
 
     await user.save();
     await organisation.save();

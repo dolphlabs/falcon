@@ -7,6 +7,7 @@ export interface IOrganisation extends Document {
   name: string;
   walletAddress: string;
   walletBalance: string;
+  entityKey: string;
   noOfEmployees: number;
   chain: Chain;
   payDay: number;
@@ -31,6 +32,10 @@ const OrganisationSchema = new Schema(
     walletBalance: {
       type: String,
       default: "0.00",
+    },
+    entityKey: {
+      type: String,
+      required: false,
     },
     noOfEmployees: {
       type: Number,
