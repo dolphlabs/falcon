@@ -124,7 +124,7 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
       organisation.id.toString()
     );
 
-    console.log("Wallet: ", wallet);
+    console.log("Wallet created: ", wallet);
 
     organisation.walletAddress = wallet.address;
     await organisation.save();
