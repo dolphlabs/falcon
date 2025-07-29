@@ -1,0 +1,89 @@
+<mjml>
+  <mj-head>
+    <mj-raw>
+      <link
+        href="https://fonts.googleapis.com/css?family=Lato:400,700&display=swap"
+        rel="stylesheet"
+      />
+    </mj-raw>
+    <mj-attributes>
+      <mj-all font-family="Lato, Helvetica, Arial, sans-serif"></mj-all>
+      <mj-text color="#333333" font-size="16px" line-height="24px"></mj-text>
+    </mj-attributes>
+    <mj-style>
+      .btn { display: inline-block; padding: 12px 25px; border-radius: 5px;
+      background-color: #4169E1; /* Royal Blue */ color: #ffffff; font-size:
+      16px; font-weight: bold; text-decoration: none; text-align: center; }
+    </mj-style>
+  </mj-head>
+  <mj-body background-color="#F0F2F5">
+    <mj-section
+      background-color="#4169E1"
+      padding-top="20px"
+      padding-bottom="20px"
+    >
+      <mj-column>
+        <mj-text
+          align="center"
+          font-size="28px"
+          color="#ffffff"
+          font-weight="bold"
+          >Falcon</mj-text
+        >
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#ffffff" padding="30px 20px">
+      <mj-column>
+        <mj-text
+          font-size="20px"
+          font-weight="bold"
+          color="#333333"
+          padding-bottom="15px"
+        >
+          You’ve Been Invited to {{orgName}}!
+        </mj-text>
+        <mj-text padding-bottom="20px">
+          You have been invited to join {{orgName}} as an admin on Falcon. If
+          you already have an account, click the button below to be added as an
+          admin. If not, use the link to create a new account and you’ll be
+          automatically added as an admin.
+        </mj-text>
+        <mj-button
+          href="{{inviteLink}}"
+          background-color="#4169E1"
+          color="#ffffff"
+          font-size="16px"
+          font-weight="bold"
+          border-radius="5px"
+          padding="12px 25px"
+        >
+          Join Now
+        </mj-button>
+        <mj-text padding-bottom="20px">
+          This invitation is valid for 24 hours. Please follow the link to
+          proceed.
+        </mj-text>
+        <mj-text padding-bottom="30px">
+          If you did not expect this invitation, please disregard this email or
+          contact support at support@falcon.com.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section
+      background-color="#F0F2F5"
+      padding-top="20px"
+      padding-bottom="20px"
+    >
+      <mj-column>
+        <mj-text align="center" font-size="14px" color="#888888">
+          &copy; 2025 Falcon. All rights reserved.
+        </mj-text>
+        <mj-text align="center" font-size="14px" color="#888888">
+          Falcon by Dolph Tech Ltd.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

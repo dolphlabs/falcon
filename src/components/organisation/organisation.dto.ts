@@ -45,3 +45,38 @@ export class LoginDto {
   @IsNotEmpty()
   password: string;
 }
+
+export class InviteAdminDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsNotEmpty()
+  organisationId: string;
+}
+
+export class RegisterFromInviteDto {
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+
+  @IsString()
+  @IsNotEmpty()
+  orgId: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+
+  @IsString()
+  @IsNotEmpty()
+  fullname: string;
+
+  @IsString()
+  @IsNotEmpty()
+  username: string;
+}

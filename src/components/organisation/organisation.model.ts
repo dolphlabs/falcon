@@ -19,7 +19,7 @@ export interface IOrganisation extends Document {
   walletBalance: string;
   entityKey: string;
   noOfEmployees: number;
-  chain: Chain[];
+  chain: String[];
   payDay: number;
   isDeleted: boolean;
   isApproved: boolean;
@@ -49,7 +49,7 @@ const OrganisationSchema = new Schema(
     },
     chain: {
       type: [String],
-      enum: chains,
+      enum: ["SOL", "BASE"],
     },
     payDay: {
       type: Number,

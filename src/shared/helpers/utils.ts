@@ -81,15 +81,14 @@ async function transferUSDC(
   recipientAddress: string,
   amount: string,
   sourceChain: string,
-  destinationChain: string,
-  entityKey: string
+  destinationChain: string
 ) {
   const client = createCircleClient({
     apiKey: envConfig.circle.apiKeyProd,
-    entitySecret: entityKey || envConfig.circle.entityKey,
+    entitySecret: entitySecret || envConfig.circle.entityKey,
   });
 
-  if (sourceChain === "SOLANA_DEVNET") {
+  if (sourceChain === "SOL") {
     // Solana-specific transfer logic
     const keypair = Keypair.fromSecretKey(
       Buffer.from(envConfig.solana.key, "hex")
@@ -109,7 +108,7 @@ async function transferUSDC(
 
     // Convert recipient address to bytes32 for EVM destination chains
     const recipientBytes32 =
-      destinationChain !== "SOLANA_DEVNET"
+      destinationChain !== "SOL"
         ? evmAddressToBytes32(recipientAddress)
         : solanaAddressToHex(recipientAddress);
 
@@ -151,7 +150,7 @@ async function transferUSDC(
     const attestation = attestationResponse.messages[0].attestation;
 
     // If destination is Solana, mint on Solana; otherwise, mint on destination chain
-    if (destinationChain === "SOLANA_DEVNET") {
+    if (destinationChain === "SOL") {
       const nonce = decodeNonceFromMessage(message);
       const receivePdas = await getReceiveMessagePdas(
         { messageTransmitterProgram, tokenMessengerMinterProgram },
@@ -233,7 +232,7 @@ async function transferUSDC(
       abiFunctionSignature: "depositForBurn(uint256,bytes32,uint32,address)",
       abiParameters: [
         amount,
-        destinationChain === "SOLANA_DEVNET"
+        destinationChain === "SOL"
           ? solanaAddressToHex(recipientAddress)
           : evmAddressToBytes32(recipientAddress),
         chainConfigs[destinationChain].destinationDomain,
@@ -261,7 +260,7 @@ async function transferUSDC(
     const attestation = attestationResponse.messages[0].attestation;
 
     // Mint USDC on destination chain
-    if (destinationChain !== "SOLANA_DEVNET") {
+    if (destinationChain !== "SOL") {
       const mintResponse = await client.createContractExecutionTransaction({
         walletId: treasuryWalletId,
         contractAddress: chainConfigs[destinationChain].tokenMessenger,
@@ -341,9 +340,8 @@ async function disbursePayroll(
       treasuryWalletId,
       address,
       amountPerEmployee,
-      "ETH-SEPOLIA",
-      chain,
-      entityKey
+      "BASE",
+      chain
     );
     console.log(
       `Disbursed ${amountPerEmployee} USDC to ${address} on ${chain}`

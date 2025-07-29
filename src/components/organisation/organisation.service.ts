@@ -10,7 +10,12 @@ import { Model } from "mongoose";
 import { OrganisationModel, IOrganisation } from "./organisation.model";
 import { Pagination } from "mongoose-paginate-ts";
 import { UserService } from "../user/user.service";
-import { CreateOrgDto, LoginDto, VerifyEmailDto } from "./organisation.dto";
+import {
+  CreateOrgDto,
+  InviteAdminDto,
+  LoginDto,
+  VerifyEmailDto,
+} from "./organisation.dto";
 import { Admin, roles, SuperAdmin } from "@/shared/constants/roles";
 import { compareHashedString, hashString } from "@dolphjs/dolph/utilities";
 import { MailSender } from "@/shared/senders/mail.sender";
@@ -20,10 +25,14 @@ import { Response } from "express";
 import { orgUserData } from "@/shared/helpers/serialise.helper";
 import { createTreasuryWallet } from "@/shared/helpers/utils";
 import envConfig from "@/shared/configs/env.config";
+import { v4 as uuidV4 } from "uuid";
+import { IToken, TokenModel } from "./token.model";
 
 @InjectMongo("organisationModel", OrganisationModel)
+@InjectMongo("tokenModel", TokenModel)
 export class OrganisationService extends DolphServiceHandler<Dolph> {
   organisationModel!: Pagination<IOrganisation>;
+  tokenModel!: Model<IToken>;
   UserService!: UserService;
   MailSender: MailSender;
   TokensService: TokensService;
@@ -186,6 +195,110 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
       res,
       orgUserData(organisation, user)
     );
+  }
+
+  async inviteAdmin(dto: InviteAdminDto) {
+    const organisation = await this.organisationModel.findOne({
+      _id: dto.organisationId,
+      isDeleted: false,
+    });
+
+    if (!organisation) throw new NotFoundException("Organisation not found");
+
+    const existingUser = await this.UserService.fetchUser({ email: dto.email });
+
+    if (existingUser) {
+      if (!organisation.admins.includes(existingUser._id)) {
+        organisation.admins.push(existingUser._id);
+        organisation.noOfEmployees += 1;
+        await organisation.save();
+      }
+      return {
+        message: "User added as admin to the organisation",
+        data: { email: existingUser.email, userId: existingUser._id },
+      };
+    } else {
+      const inviteToken = uuidV4();
+      const inviteLink = `${
+        envConfig.app.url
+      }/register?token=${inviteToken}&orgId=${
+        dto.organisationId
+      }&email=${encodeURIComponent(dto.email)}`;
+
+      await this.storeInviteToken(inviteToken, dto.email, dto.organisationId);
+
+      this.MailSender.sendInviteEmail(dto.email, organisation.name, inviteLink);
+
+      return {
+        message: "Invite email sent with registration link",
+        data: { email: dto.email },
+      };
+    }
+  }
+
+  private async storeInviteToken(token: string, email: string, orgId: string) {
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await this.tokenModel.create({ token, email, id: orgId, expiresAt });
+    console.log(`Stored invite token ${token} for ${email} and org ${orgId}`);
+  }
+
+  async registerFromInvite(
+    token: string,
+    orgId: string,
+    email: string,
+    password: string,
+    fullname: string,
+    username: string
+  ) {
+    const invite = await this.verifyInviteToken(token, email, orgId);
+    if (!invite)
+      throw new BadRequestException("Invalid or expired invite link");
+
+    const userByEmail = await this.UserService.fetchUser({ email });
+    if (userByEmail) throw new BadRequestException("Email already registered");
+
+    const userByUsername = await this.UserService.fetchUser({ username });
+    if (userByUsername) throw new BadRequestException("Username taken");
+
+    const organisation = await this.organisationModel.findById(orgId);
+    if (!organisation) throw new NotFoundException("Organisation not found");
+
+    const hashedPassword = await hashString(password, 12);
+
+    const user = await this.UserService.createUser({
+      email,
+      username,
+      role: [Admin],
+      org: organisation._id,
+      fullname,
+      password: hashedPassword,
+      isVerified: true,
+    });
+
+    organisation.admins.push(user._id);
+    organisation.noOfEmployees += 1;
+    await organisation.save();
+
+    await this.removeInviteToken(token);
+
+    return {
+      message: "Account created and added as admin",
+      data: { email: user.email, userId: user._id },
+    };
+  }
+
+  private async verifyInviteToken(token: string, email: string, orgId: string) {
+    const invite = await this.tokenModel.findOne({
+      token,
+      email,
+      expiresAt: { $gt: new Date() },
+      type: "INVITE",
+    });
+    return invite;
+  }
+
+  private async removeInviteToken(token: string) {
+    await this.tokenModel.deleteOne({ token });
   }
 
   async fetchOrg(filter: any) {

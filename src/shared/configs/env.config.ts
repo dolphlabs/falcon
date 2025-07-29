@@ -78,6 +78,9 @@ export default {
   solana: {
     key: envVars.SOLANA_PRIVATE_KEY,
   },
+  app: {
+    url: "http://localhost:3003",
+  },
 };
 
 export const isDev = () => envVars.NODE_ENV === "development";
