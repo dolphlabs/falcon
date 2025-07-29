@@ -2,14 +2,24 @@ import { Chain, chains } from "@/shared/constants/chains";
 import { Schema, Document, model, Types } from "mongoose";
 import { mongoosePagination, Pagination } from "mongoose-paginate-ts";
 
+export interface IWallet {
+  solAddress: string;
+  baseAddress: string;
+  solBalance: string;
+  baseBalance: string;
+  walletSetId: string;
+  baseWalletId: string;
+  solWalletId: string;
+}
+
 export interface IOrganisation extends Document {
   _id: Types.ObjectId;
   name: string;
-  walletAddress: string;
+  wallet: IWallet;
   walletBalance: string;
   entityKey: string;
   noOfEmployees: number;
-  chain: Chain;
+  chain: Chain[];
   payDay: number;
   isDeleted: boolean;
   isApproved: boolean;
@@ -25,10 +35,6 @@ const OrganisationSchema = new Schema(
       type: String,
       required: true,
     },
-    walletAddress: {
-      type: String,
-      // required: true,
-    },
     walletBalance: {
       type: String,
       default: "0.00",
@@ -42,7 +48,7 @@ const OrganisationSchema = new Schema(
       default: 0,
     },
     chain: {
-      type: String,
+      type: [String],
       enum: chains,
     },
     payDay: {
@@ -61,6 +67,29 @@ const OrganisationSchema = new Schema(
     isApproved: {
       type: Boolean,
       default: false,
+    },
+    wallet: {
+      solAddress: {
+        type: String,
+      },
+      baseAddress: {
+        type: String,
+      },
+      solBalance: {
+        type: String,
+      },
+      baseBalance: {
+        type: String,
+      },
+      walletSetId: {
+        type: String,
+      },
+      baseWalletId: {
+        type: String,
+      },
+      solWalletId: {
+        type: String,
+      },
     },
   },
   { timestamps: true, versionKey: false }

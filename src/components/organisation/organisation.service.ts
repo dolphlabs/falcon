@@ -18,10 +18,8 @@ import { generateOtp } from "@/shared/helpers/otp.helper";
 import { TokensService } from "@/shared/services/token.service";
 import { Response } from "express";
 import { orgUserData } from "@/shared/helpers/serialise.helper";
-import {
-  createTreasuryWallet,
-  generateOrgEntityKey,
-} from "@/shared/helpers/utils";
+import { createTreasuryWallet } from "@/shared/helpers/utils";
+import envConfig from "@/shared/configs/env.config";
 
 @InjectMongo("organisationModel", OrganisationModel)
 export class OrganisationService extends DolphServiceHandler<Dolph> {
@@ -103,31 +101,43 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
     if (dto.code !== user.otp)
       throw new BadRequestException("Invalid or expired OTP");
 
+    if (user.isVerified)
+      throw new BadRequestException("Account has already been verified");
+
     const today = new Date();
     // if (new Date(today) < user.otpExpiry)
     //   throw new BadRequestException("Invalid or expired OTP");
 
     user.isVerified = true;
+    user.otp = "";
+    user.otpExpiry = null;
     organisation.isApproved = true;
     organisation.noOfEmployees = 1;
     organisation.admins = [user._id];
 
     // Todo: encrypt this key and decrypt it when needed
-    organisation.entityKey = generateOrgEntityKey();
+    organisation.entityKey = envConfig.circle.entityKey;
 
     await user.save();
     await organisation.save();
 
-    const wallet = await createTreasuryWallet(
-      organisation.name,
-      organisation.entityKey,
-      organisation.id.toString()
-    );
+    if (!organisation.wallet?.walletSetId) {
+      const { base, sol } = await createTreasuryWallet(organisation.name);
 
-    console.log("Wallet created: ", wallet);
+      organisation.chain = [base.blockchain, sol.blockchain];
 
-    organisation.walletAddress = wallet.address;
-    await organisation.save();
+      organisation.wallet = {
+        baseAddress: base.address,
+        solAddress: sol.address,
+        baseBalance: "0.0000",
+        solBalance: "0.0000",
+        baseWalletId: base.id,
+        solWalletId: sol.id,
+        walletSetId: base.walletSetId,
+      };
+
+      await organisation.save();
+    }
 
     const { accessToken } = await this.TokensService.generateToken(
       user._id.toString()

@@ -1,7 +1,9 @@
 import {
   Blockchain,
   FeeLevel,
+  generateEntitySecret,
   initiateDeveloperControlledWalletsClient,
+  registerEntitySecretCiphertext,
 } from "@circle-fin/developer-controlled-wallets";
 import envConfig, { isDev, isProd } from "../configs/env.config";
 import {
@@ -25,146 +27,53 @@ import {
 } from "./solana.helper";
 import { BN } from "@coral-xyz/anchor";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
-import * as forge from "node-forge";
 
-export function generateOrgEntityKey() {
-  const entitySecretBytes = crypto.randomBytes(32);
+const entitySecret = envConfig.circle.entityKey || generateEntitySecret();
+console.log("Generated Entity Secret:", entitySecret);
 
-  // Convert the bytes to a hexadecimal string
-  const entitySecretHex = entitySecretBytes.toString("hex");
-
-  return entitySecretHex;
-}
-
-async function getCirclePublicKey(apiKey: string): Promise<string> {
-  const baseUrl = isDev()
-    ? "https://api.circle.com"
-    : "https://api-sandbox.circle.com";
-  const response = await fetch(`${baseUrl}/v1/w3s/config/entity/publicKey`, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    console.error("Error fetching Circle public key:", errorData);
-    throw new Error(
-      `Failed to fetch Circle public key: ${response.status} ${response.statusText}`
-    );
+async function registerEntitySecret() {
+  const apiKey = envConfig.circle.apiKeyProd;
+  try {
+    const response = await registerEntitySecretCiphertext({
+      apiKey,
+      entitySecret,
+    });
+    console.log("Entity Secret registered successfully:", response);
+  } catch (error) {
+    console.error("Error registering Entity Secret:", error);
+    throw error;
   }
-
-  const data = await response.json();
-  // The public key is typically in PEM format
-  return data.data.publicKey;
 }
 
-export function encryptEntitySecret(
-  entitySecret: string,
-  publicKeyPem: string
-): string {
-  const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
-  const buffer = forge.util.createBuffer(forge.util.hexToBytes(entitySecret));
-  // RSAES-OAEP with SHA256 and MGF1 with SHA256 (as per Circle's documentation)
-  const encryptedBytes = publicKey.encrypt(buffer.getBytes(), "RSAES-OAEP", {
-    md: forge.md.sha256.create(),
-    mgf1: forge.mgf1.create(forge.md.sha256.create()),
-  });
-  // Base64 encode the ciphertext
-  return forge.util.encode64(encryptedBytes);
-}
+// Commented out after first run
+// registerEntitySecret();
 
-async function registerEntitySecretCiphertext(
-  apiKey: string,
-  entitySecretCiphertext: string,
-  recoveryFilePassword?: string
-): Promise<any> {
-  const baseUrl = isDev()
-    ? "https://api.circle.com"
-    : "https://api-sandbox.circle.com";
-  const payload: any = {
-    entitySecretCiphertext: entitySecretCiphertext,
-  };
-  if (recoveryFilePassword) {
-    payload.recoveryFilePassword = recoveryFilePassword;
-  }
-
-  const response = await fetch(`${baseUrl}/v1/w3s/config/entitySecret`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    console.error("Error registering Entity Secret Ciphertext:", errorData);
-    throw new Error(
-      `Failed to register Entity Secret Ciphertext: ${response.status} ${response.statusText}`
-    );
-  }
-
-  const data = await response.json();
-  console.log("Entity Secret Ciphertext registered successfully:", data);
-  // The response might contain a recoveryFile field if requested
-  return data;
-}
-
-export async function createTreasuryWallet(
-  organisationName: string,
-  entityKey: string,
-  organisationId: string
-) {
-  const circlePublicKey = await getCirclePublicKey(envConfig.circle.apiKeyProd);
-  console.log("Fetched Circle Public Key.");
-
-  const entitySecretCiphertext = encryptEntitySecret(
-    entityKey,
-    circlePublicKey
-  );
-
-  console.log("Generated Entity Secret Ciphertext.");
-
-  const registrationResponse = await registerEntitySecretCiphertext(
-    envConfig.circle.apiKeyProd,
-    entitySecretCiphertext
-    // Optional: provide a password for recovery file generation
-    // crypto.randomBytes(16).toString('hex') // Example: generate a random password
-  );
-
-  console.log(
-    "Entity Secret Ciphertext registration complete: ",
-    registrationResponse
-  );
-
+export async function createTreasuryWallet(organisationName: string) {
   const client = initiateDeveloperControlledWalletsClient({
     apiKey: envConfig.circle.apiKeyProd,
-    entitySecret: entityKey || envConfig.circle.entityKey,
+    entitySecret,
     baseUrl: isDev()
       ? "https://api.circle.com"
       : "https://api-sandbox.circle.com",
   });
 
-  // Create a wallet set
   const walletSetResponse = await client.createWalletSet({
     name: `${organisationName} - Payroll Treasury`,
   });
+
   const walletSetId = walletSetResponse.data?.walletSet?.id;
 
-  // Create treasury wallet on multiple chains
   const walletsResponse = await client.createWallets({
-    blockchains: blockChains as Blockchain[],
+    blockchains: ["BASE", "SOL"],
+    // blockchains: ["SOL-DEVNET", "BASE-SEPOLIA"],
     count: 1,
     walletSetId,
   });
 
-  console.log("Treasury Wallet:", walletsResponse.data?.wallets[0]);
-  return walletsResponse.data?.wallets[0];
+  return {
+    base: walletsResponse.data?.wallets[0],
+    sol: walletsResponse.data?.wallets[1],
+  };
 }
 
 async function transferUSDC(

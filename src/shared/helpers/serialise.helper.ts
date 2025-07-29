@@ -18,7 +18,9 @@ export const orgUserData = (org: IOrganisation, user: IUser) => {
     orgChain: org.chain,
     orgId: org._id.toString(),
     orgName: org.name,
-    orgWalletAddress: org.walletAddress,
+    orgWalletAddress: {
+      ...org.wallet,
+    },
     orgWalletBalance: org.walletBalance,
     payDay: org.payDay,
     position: user.position,
