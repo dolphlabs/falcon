@@ -1,5 +1,6 @@
 import { IOrgResponse } from "@/components/organisation/organisation.interface";
 import { IOrganisation } from "@/components/organisation/organisation.model";
+import { IUserResponse } from "@/components/user/user.interface";
 import { IUser } from "@/components/user/user.model";
 
 export const orgUserData = (org: IOrganisation, user: IUser) => {
@@ -23,6 +24,35 @@ export const orgUserData = (org: IOrganisation, user: IUser) => {
     },
     orgWalletBalance: org.walletBalance,
     payDay: org.payDay,
+    position: user.position,
+    role: user.role,
+    salary: user.salary,
+    userId: user._id.toString(),
+    username: user.username,
+    userWalletAddress: user.walletAddress,
+    userWalletAmount: user.walletAmount,
+  };
+
+  return result;
+};
+
+export const employeeData = (user: IUser, org: IOrganisation) => {
+  const result: IUserResponse = {
+    email: user.email,
+    fullname: user.fullname,
+    image: user.image,
+    isUserDeleted: user.isDeleted,
+    isUserSuspended: user.isSuspended,
+    isUserVerified: user.isVerified,
+    organisation: {
+      admins: org.admins as unknown as IUser[],
+      isOrgDeleted: org.isDeleted,
+      logo: org.logo,
+      noOfEmployees: org.noOfEmployees,
+      orgId: org._id.toString(),
+      orgName: org.name,
+      payDay: org.payDay,
+    },
     position: user.position,
     role: user.role,
     salary: user.salary,

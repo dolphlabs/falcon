@@ -3,18 +3,22 @@ import {
   Dolph,
   SuccessResponse,
   DRequest,
-  DResponse
+  DResponse,
 } from "@dolphjs/dolph/common";
-import { Get, Route } from "@dolphjs/dolph/decorators";
+import { DBody, DRes, Get, Post, Route } from "@dolphjs/dolph/decorators";
+import { LoginDto } from "../organisation/organisation.dto";
+import { UserService } from "./user.service";
+import { Response } from "express";
 
-@Route('user')
+@Route("user")
 export class UserController extends DolphControllerHandler<Dolph> {
+  private UserService: UserService;
   constructor() {
     super();
   }
 
-  @Get("greet")
-  async greet (req: DRequest, res: DResponse) {
-    SuccessResponse({ res, body: { message: "you've reached the user endpoint." } });
+  @Post("signin")
+  async login(@DBody(LoginDto) body: LoginDto, @DRes() res: Response) {
+    await this.UserService.login(body, res);
   }
 }
