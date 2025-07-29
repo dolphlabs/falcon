@@ -1,10 +1,11 @@
-import { Document, model, Schema } from "mongoose";
+import { Document, model, Schema, SchemaTypes, Types } from "mongoose";
 
 export interface IToken extends Document {
   token: string;
   email: string;
   type: string;
   expiresAt: Date;
+  metaData: any;
 }
 
 const tokenSchema = new Schema(
@@ -24,6 +25,9 @@ const tokenSchema = new Schema(
     },
     expiresAt: {
       type: Date,
+    },
+    metaData: {
+      type: SchemaTypes.Mixed,
     },
   },
   { timestamps: false, versionKey: false }

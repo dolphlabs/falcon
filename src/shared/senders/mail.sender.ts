@@ -75,4 +75,21 @@ export class MailSender extends DolphServiceHandler<Dolph> {
       }),
     });
   }
+
+  async sendEmployeeInviteEmail(
+    to: string,
+    name: string,
+    link: string,
+    position: string
+  ) {
+    return this.send({
+      to,
+      subject: `${name} has invited you to Falcon`,
+      html: this.convertFromMjmlToHtml("../../templates/invite_employee.mjml")({
+        orgName: name,
+        inviteLink: link,
+        position,
+      }),
+    });
+  }
 }

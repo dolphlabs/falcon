@@ -27,6 +27,7 @@ import { createTreasuryWallet } from "@/shared/helpers/utils";
 import envConfig from "@/shared/configs/env.config";
 import { v4 as uuidV4 } from "uuid";
 import { IToken, TokenModel } from "./token.model";
+import { InviteEmployeeDto } from "../user/user.dto";
 
 @InjectMongo("organisationModel", OrganisationModel)
 @InjectMongo("tokenModel", TokenModel)
@@ -236,9 +237,20 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
     }
   }
 
-  private async storeInviteToken(token: string, email: string, orgId: string) {
+  private async storeInviteToken(
+    token: string,
+    email: string,
+    orgId: string,
+    metaData?: any
+  ) {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    await this.tokenModel.create({ token, email, id: orgId, expiresAt });
+    await this.tokenModel.create({
+      token,
+      email,
+      id: orgId,
+      expiresAt,
+      metaData,
+    });
     console.log(`Stored invite token ${token} for ${email} and org ${orgId}`);
   }
 
@@ -283,6 +295,109 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
 
     return {
       message: "Account created and added as admin",
+      data: { email: user.email, userId: user._id },
+    };
+  }
+
+  async inviteEmployee(dto: InviteEmployeeDto) {
+    const organisation = await this.organisationModel.findOne({
+      _id: dto.organisationId,
+      isDeleted: false,
+    });
+
+    if (!organisation) throw new NotFoundException("Organisation not found");
+
+    const existingUser = await this.UserService.fetchUser({ email: dto.email });
+
+    if (existingUser) {
+      if (!organisation.admins.includes(existingUser._id)) {
+        if (
+          !existingUser.role.includes(Admin) &&
+          !existingUser.role.includes(SuperAdmin)
+        ) {
+          existingUser.position = dto.position;
+          existingUser.salary = dto.salary.toString();
+          await existingUser.save();
+        }
+
+        organisation.noOfEmployees += 1;
+        await organisation.save();
+      }
+
+      return {
+        message: "User added as employee to the organisation",
+        data: { email: existingUser.email, userId: existingUser._id },
+      };
+    } else {
+      const inviteToken = uuidV4();
+      const inviteLink = `${
+        envConfig.app.url
+      }/register?token=${inviteToken}&orgId=${
+        dto.organisationId
+      }&email=${encodeURIComponent(dto.email)}`;
+
+      await this.storeInviteToken(inviteToken, dto.email, dto.organisationId, {
+        position: dto.position,
+        salary: String(dto.salary),
+      });
+
+      this.MailSender.sendEmployeeInviteEmail(
+        dto.email,
+        organisation.name,
+        inviteLink,
+        dto.position
+      );
+
+      return {
+        message: "Invite email sent with registration link",
+        data: { email: dto.email },
+      };
+    }
+  }
+
+  async registerEmployeeFromInvite(
+    token: string,
+    orgId: string,
+    email: string,
+    password: string,
+    fullname: string,
+    username: string
+  ) {
+    const invite = await this.verifyInviteToken(token, email, orgId);
+
+    const userByEmail = await this.UserService.fetchUser({ email });
+
+    if (userByEmail) throw new BadRequestException("Email already registered");
+
+    const userByUsername = await this.UserService.fetchUser({ username });
+
+    if (userByUsername) throw new BadRequestException("Username taken");
+
+    const organisation = await this.organisationModel.findById(orgId);
+
+    if (!organisation) throw new NotFoundException("Organisation not found");
+
+    const hashedPassword = await hashString(password, 12);
+
+    const user = await this.UserService.createUser({
+      email,
+      username,
+      role: [],
+      org: organisation._id,
+      fullname,
+      password: hashedPassword,
+      isVerified: true,
+      position: invite.metaData.position || "",
+      salary: invite.metaData.salary || "0.00",
+    });
+
+    organisation.noOfEmployees += 1;
+    await organisation.save();
+
+    await this.removeInviteToken(token);
+
+    return {
+      message: "Account created and added as employee",
       data: { email: user.email, userId: user._id },
     };
   }

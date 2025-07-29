@@ -26,6 +26,7 @@ import {
 } from "./organisation.dto";
 import { authShield } from "@/shared/shields/auth.shield";
 import { adminShield } from "@/shared/shields/admin.shield";
+import { InviteEmployeeDto } from "../user/user.dto";
 
 @Route("organisation")
 export class OrganisationController extends DolphControllerHandler<Dolph> {
@@ -65,13 +66,41 @@ export class OrganisationController extends DolphControllerHandler<Dolph> {
     SuccessResponse({ res, body: result });
   }
 
-  @Post("register-from-invite")
+  @Post("register-admin-from-invite")
   async registerFromInvite(
     @DBody(RegisterFromInviteDto) body: RegisterFromInviteDto,
     @DRes() res: Response
   ) {
     const { email, fullname, orgId, password, token, username } = body;
     const result = await this.OrganisationService.registerFromInvite(
+      token,
+      orgId,
+      email,
+      password,
+      fullname,
+      username
+    );
+    SuccessResponse({ res, body: result });
+  }
+
+  @Post("invite-employee")
+  @UseMiddleware(adminShield)
+  @UseMiddleware(authShield)
+  async inviteEmployee(
+    @DBody(InviteEmployeeDto) body: InviteEmployeeDto,
+    @DRes() res: Response
+  ) {
+    const result = await this.OrganisationService.inviteEmployee(body);
+    SuccessResponse({ res, body: result });
+  }
+
+  @Post("register-employee-from-invite")
+  async registerEmployeeFromInvite(
+    @DBody(RegisterFromInviteDto) body: RegisterFromInviteDto,
+    @DRes() res: Response
+  ) {
+    const { email, fullname, orgId, password, token, username } = body;
+    const result = await this.OrganisationService.registerEmployeeFromInvite(
       token,
       orgId,
       email,
