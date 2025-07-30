@@ -49,6 +49,15 @@ export class UserService extends DolphServiceHandler<Dolph> {
     );
   }
 
+  async logout(res: Response) {
+    try {
+      await this.TokensService.clearCookie(res);
+      return { message: "Successfully logged out" };
+    } catch (error) {
+      throw new BadRequestException("Failed to log out");
+    }
+  }
+
   createUser(dto: Partial<IUser>) {
     return this.userModel.create(dto);
   }

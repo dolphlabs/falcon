@@ -70,4 +70,18 @@ export class TokensService extends DolphServiceHandler<Dolph> {
       res.status(200).send(body);
     }
   }
+
+  async clearCookie(res: Response): Promise<void> {
+    res.clearCookie("Falcon", {
+      httpOnly: true,
+      secure: isProd(),
+      sameSite: isProd() ? "none" : undefined,
+    });
+    res.clearCookie("OSetAccess", {
+      httpOnly: true,
+      secure: isProd(),
+      sameSite: isProd() ? "none" : undefined,
+    });
+    res.set("Cache-Control", "no-store");
+  }
 }

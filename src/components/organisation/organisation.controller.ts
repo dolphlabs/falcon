@@ -110,4 +110,12 @@ export class OrganisationController extends DolphControllerHandler<Dolph> {
     );
     SuccessResponse({ res, body: result });
   }
+
+  @Post("logout")
+  @UseMiddleware(authShield)
+  async logout(@DRes() res: DResponse, @DReq() req: DRequest) {
+    req.payload = {} as any;
+    const result = await this.OrganisationService.logout(res);
+    SuccessResponse({ res, body: result });
+  }
 }
