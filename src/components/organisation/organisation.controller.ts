@@ -7,6 +7,7 @@ import {
 } from "@dolphjs/dolph/common";
 import {
   DBody,
+  Delete,
   DReq,
   DRes,
   Get,
@@ -118,4 +119,7 @@ export class OrganisationController extends DolphControllerHandler<Dolph> {
     const result = await this.OrganisationService.logout(res);
     SuccessResponse({ res, body: result });
   }
+
+  @Delete("")
+  async deleteAccount() {}
 }
