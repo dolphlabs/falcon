@@ -4,10 +4,12 @@ import {
   SuccessResponse,
   DRequest,
   DResponse,
+  IPayload,
 } from "@dolphjs/dolph/common";
 import {
   DBody,
   Delete,
+  DPayload,
   DReq,
   DRes,
   Get,
@@ -28,6 +30,7 @@ import {
 import { authShield } from "@/shared/shields/auth.shield";
 import { adminShield } from "@/shared/shields/admin.shield";
 import { InviteEmployeeDto } from "../user/user.dto";
+import { IOrgResponse } from "./organisation.interface";
 
 @Route("organisation")
 export class OrganisationController extends DolphControllerHandler<Dolph> {
@@ -121,5 +124,25 @@ export class OrganisationController extends DolphControllerHandler<Dolph> {
   }
 
   @Delete("")
-  async deleteAccount() {}
+  @UseMiddleware(adminShield)
+  @UseMiddleware(authShield)
+  async deleteAccount(
+    @DRes() res: DResponse,
+    @DPayload() payload: IPayload,
+    @DReq() req: DRequest
+  ) {
+    const result = await this.OrganisationService.deleteOrg(res, payload.sub);
+    req.payload = {} as any;
+    SuccessResponse({ res, body: result });
+  }
+
+  @Get("balance")
+  @UseMiddleware(authShield)
+  async getBalance(@DRes() res: DResponse, @DPayload() payload: IPayload) {
+    const result = await this.OrganisationService.getOrgBalance(
+      (payload.info as IOrgResponse).orgId
+    );
+
+    SuccessResponse({ res, body: result });
+  }
 }

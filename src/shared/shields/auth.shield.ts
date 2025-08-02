@@ -9,8 +9,11 @@ import { verifyJWTwithHMAC } from "@dolphjs/dolph/utilities";
 import envConfig from "../configs/env.config";
 import { UserService } from "@/components/user/user.service";
 import { orgUserData } from "../helpers/serialise.helper";
+import { OrganisationService } from "@/components/organisation/organisation.service";
+import { IOrganisation } from "@/components/organisation/organisation.model";
 
 const userService = new UserService();
+const orgService = new OrganisationService();
 
 export const authShield = async (
   req: DRequest,
@@ -43,9 +46,11 @@ export const authShield = async (
       );
     }
 
+    const org = await orgService.fetchOrg({ _id: user.org });
+
     req.payload = {
       sub: user._id.toString(),
-      info: orgUserData(await user.populate("org", "name admins"), user),
+      info: orgUserData(org || ({} as IOrganisation), user),
       exp: payload.exp,
       iat: payload.iat,
     };

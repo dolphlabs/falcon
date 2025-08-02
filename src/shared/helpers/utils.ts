@@ -348,3 +348,54 @@ async function disbursePayroll(
     );
   }
 }
+
+export async function getWalletBalances(
+  address: string,
+  blockchain: Blockchain,
+  tokenAddress?: string
+): Promise<any | null> {
+  const client = initiateDeveloperControlledWalletsClient({
+    apiKey: envConfig.circle.apiKeyProd,
+    entitySecret,
+    baseUrl: isDev()
+      ? "https://api.circle.com"
+      : "https://api-sandbox.circle.com",
+  });
+
+  try {
+    const response = await client.getWalletsWithBalances({
+      blockchain,
+      address,
+      tokenAddress,
+    });
+
+    const tokenBalances = (response.data.wallets[0] as any).tokenBalances;
+
+    console.log(JSON.stringify(tokenBalances));
+
+    if (!tokenBalances) {
+      console.error(
+        `Wallet with address ${address} not found or has no balances.`
+      );
+      return "0.0000";
+    }
+
+    const usdcToken = tokenBalances.find(
+      (balance: any) => balance.token.symbol === "USDC"
+    );
+
+    if (usdcToken) {
+      console.log(`Balances for wallet address ${address}:`, usdcToken);
+      return usdcToken.amount || "0.0000";
+    } else {
+      console.log(`USDC balance not found for wallet address ${address}.`);
+      return "0.0000";
+    }
+  } catch (error) {
+    console.error(
+      `Error fetching balances for wallet address ${address}:`,
+      error
+    );
+    return null;
+  }
+}

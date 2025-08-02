@@ -23,11 +23,23 @@ import { generateOtp } from "@/shared/helpers/otp.helper";
 import { TokensService } from "@/shared/services/token.service";
 import { Response } from "express";
 import { orgUserData } from "@/shared/helpers/serialise.helper";
-import { createTreasuryWallet } from "@/shared/helpers/utils";
-import envConfig from "@/shared/configs/env.config";
+import {
+  createTreasuryWallet,
+  getWalletBalances,
+} from "@/shared/helpers/utils";
+import envConfig, { isDev } from "@/shared/configs/env.config";
 import { v4 as uuidV4 } from "uuid";
 import { IToken, TokenModel } from "./token.model";
 import { InviteEmployeeDto } from "../user/user.dto";
+import {
+  generateEntitySecret,
+  initiateDeveloperControlledWalletsClient,
+} from "@circle-fin/developer-controlled-wallets";
+import axios from "axios";
+import {
+  BaseUSDCAddress,
+  SOLUSDCAddress,
+} from "@/shared/helpers/chains.helper";
 
 @InjectMongo("organisationModel", OrganisationModel)
 @InjectMongo("tokenModel", TokenModel)
@@ -37,12 +49,14 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
   UserService!: UserService;
   MailSender: MailSender;
   TokensService: TokensService;
+  entitySecret: string;
 
   constructor() {
     super("organisationservice");
     this.UserService = new UserService();
     this.MailSender = new MailSender();
     this.TokensService = new TokensService();
+    this.entitySecret = envConfig.circle.entityKey || generateEntitySecret();
   }
 
   async createOrg(dto: CreateOrgDto) {
@@ -419,6 +433,76 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
     } catch (error) {
       throw new BadRequestException("Failed to log out");
     }
+  }
+
+  async deleteOrg(res: Response, accountId) {
+    this.organisationModel.updateOne({ _id: accountId }, { isDeleted: true });
+    this.logout(res);
+  }
+
+  async getOrgBalance(orgId: string) {
+    const entitySecret = this.entitySecret;
+    const organisation = await this.fetchOrg({ _id: orgId });
+
+    if (!organisation) throw new NotFoundException("organisation not found");
+
+    if (!organisation.wallet?.walletSetId) {
+      throw new BadRequestException(
+        "No wallet associated with this organisation"
+      );
+    }
+
+    const client = initiateDeveloperControlledWalletsClient({
+      apiKey: envConfig.circle.apiKeyProd,
+      entitySecret,
+      baseUrl: isDev()
+        ? "https://api.circle.com"
+        : "https://api-sandbox.circle.com",
+    });
+
+    const solWallet = await client.getWallet({
+      id: organisation.wallet.solWalletId,
+    });
+
+    const baseWallet = await client.getWallet({
+      id: organisation.wallet.baseWalletId,
+    });
+
+    const solBalance = await this.fetchWalletBalance(
+      organisation.wallet.solAddress,
+      "SOL",
+      SOLUSDCAddress
+    );
+
+    const baseBalance = await this.fetchWalletBalance(
+      organisation.wallet.baseAddress,
+      "BASE"
+      // BaseUSDCAddress
+    );
+
+    // Update organisation wallet balances
+    organisation.wallet.solBalance = solBalance;
+    organisation.wallet.baseBalance = baseBalance;
+    await organisation.save();
+
+    return {
+      message: "Organisation balance fetched successfully",
+      data: {
+        solBalance,
+        baseBalance,
+        totalBalance: (
+          parseFloat(solBalance) + parseFloat(baseBalance)
+        ).toFixed(4),
+      },
+    };
+  }
+
+  private async fetchWalletBalance(
+    address: string,
+    blockchain: any,
+    tokenAddress?: string
+  ): Promise<string> {
+    return getWalletBalances(address, blockchain, tokenAddress);
   }
 
   private async removeInviteToken(token: string) {

@@ -48,6 +48,10 @@ export const CHAIN_TO_CHAIN_NAME: Record<number, string> = {
   [SupportedChainId.POLYGON_AMOY]: "Polygon Amoy",
 };
 
+export const BaseUSDCAddress = "0x833589fCD6eDb6E08f4c7C32D4f71b54bd503F75";
+
+export const SOLUSDCAddress = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+
 export const CHAIN_IDS_TO_USDC_ADDRESSES: Record<number, Hex | string> = {
   [SupportedChainId.ETH_SEPOLIA]: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
   [SupportedChainId.AVAX_FUJI]: "0x5425890298aed601595a70AB815c96711a31Bc65",
