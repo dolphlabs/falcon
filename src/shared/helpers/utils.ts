@@ -76,6 +76,33 @@ export async function createTreasuryWallet(organisationName: string) {
   };
 }
 
+export async function createUserWallet(
+  username: string,
+  blockchain: Blockchain
+) {
+  const client = initiateDeveloperControlledWalletsClient({
+    apiKey: envConfig.circle.apiKeyProd,
+    entitySecret,
+    baseUrl: isDev()
+      ? "https://api.circle.com"
+      : "https://api-sandbox.circle.com",
+  });
+
+  const walletSetResponse = await client.createWalletSet({
+    name: `${username} - Payroll Treasury`,
+  });
+
+  const walletSetId = walletSetResponse.data?.walletSet?.id;
+
+  const walletsResponse = await client.createWallets({
+    blockchains: [blockchain],
+    count: 1,
+    walletSetId,
+  });
+
+  return walletsResponse.data?.wallets[0];
+}
+
 async function transferUSDC(
   treasuryWalletId: string,
   recipientAddress: string,

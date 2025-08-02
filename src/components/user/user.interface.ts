@@ -25,5 +25,6 @@ export interface IUserResponse {
   isUserSuspended: boolean;
   userWalletAddress: string;
   userWalletAmount: string;
+  chain: string;
   isUserDeleted: boolean;
 }

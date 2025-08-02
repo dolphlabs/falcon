@@ -45,13 +45,13 @@ export const employeeData = (user: IUser, org: IOrganisation) => {
     isUserSuspended: user.isSuspended,
     isUserVerified: user.isVerified,
     organisation: {
-      admins: org.admins as unknown as IUser[],
-      isOrgDeleted: org.isDeleted,
-      logo: org.logo,
-      noOfEmployees: org.noOfEmployees,
-      orgId: org._id.toString(),
-      orgName: org.name,
-      payDay: org.payDay,
+      admins: org?.admins as unknown as IUser[],
+      isOrgDeleted: org?.isDeleted,
+      logo: org?.logo,
+      noOfEmployees: org?.noOfEmployees,
+      orgId: org?._id.toString() || "",
+      orgName: org?.name,
+      payDay: org?.payDay,
     },
     position: user.position,
     role: user.role,
@@ -60,6 +60,7 @@ export const employeeData = (user: IUser, org: IOrganisation) => {
     username: user.username,
     userWalletAddress: user.walletAddress,
     userWalletAmount: user.walletAmount,
+    chain: user.chain,
   };
 
   return result;

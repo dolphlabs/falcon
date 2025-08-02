@@ -1,4 +1,5 @@
 import { Role, roles } from "@/shared/constants/roles";
+import { Blockchain } from "@circle-fin/developer-controlled-wallets";
 import { Schema, Document, model, Types } from "mongoose";
 import { mongoosePagination, Pagination } from "mongoose-paginate-ts";
 
@@ -18,7 +19,11 @@ export interface IUser extends Document {
   otpExpiry: Date;
   isSuspended: boolean;
   walletAddress: string;
+  chain: Blockchain;
+  tokenAddress: string;
   walletAmount: string;
+  walletId: string;
+  walletSetId: string;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -73,7 +78,19 @@ const UserSchema = new Schema(
     walletAddress: {
       type: String,
     },
+    tokenAddress: {
+      type: String,
+    },
+    chain: {
+      type: String,
+    },
     walletAmount: {
+      type: String,
+    },
+    walletId: {
+      type: String,
+    },
+    walletSetId: {
       type: String,
     },
     org: {

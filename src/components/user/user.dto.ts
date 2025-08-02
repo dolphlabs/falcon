@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, IsNumber } from "class-validator";
+import { IsEmail, IsNotEmpty, IsString, IsNumber, IsIn } from "class-validator";
 
 export class InviteEmployeeDto {
   @IsEmail()
@@ -16,4 +16,11 @@ export class InviteEmployeeDto {
   @IsNotEmpty()
   @IsNumber()
   salary: number; // In USDC
+}
+
+export class AddWalletDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(["BASE", "SOL", "AVAX", "LINEA", "ETH", "OPTIMISM"])
+  chain: string;
 }

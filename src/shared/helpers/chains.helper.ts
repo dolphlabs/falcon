@@ -48,9 +48,26 @@ export const CHAIN_TO_CHAIN_NAME: Record<number, string> = {
   [SupportedChainId.POLYGON_AMOY]: "Polygon Amoy",
 };
 
-export const BaseUSDCAddress = "0x833589fCD6eDb6E08f4c7C32D4f71b54bd503F75";
-
+export const EthereumUSDCAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+export const AvalancheUSDCAddress =
+  "0xB97EF9e8734C71904dC006fc2d93eAA8d99f84eC";
+export const LineaUSDCAddress = "0xA21943924Bf91167c1e6e0E88b9076D74e5088d1";
+export const ArbitrumUSDCAddress = "0xaf88d065e77c8cC223D8E79B95F0Cc232abCDA50";
+export const OptimismUSDCAddress = "0x0b2c639c533813f4aa9d7837caf62653d097fcc2";
+export const PolygonUSDCAddress = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359";
+export const BaseUSDCAddress = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 export const SOLUSDCAddress = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+
+export const chainsMap = {
+  ETH: EthereumUSDCAddress,
+  LINEA: LineaUSDCAddress,
+  ARBITRUM: ArbitrumUSDCAddress,
+  OPT: OptimismUSDCAddress,
+  POLYGON: PolygonUSDCAddress,
+  BASE: BaseUSDCAddress,
+  SOL: SOLUSDCAddress,
+  AVAX: AvalancheUSDCAddress,
+};
 
 export const CHAIN_IDS_TO_USDC_ADDRESSES: Record<number, Hex | string> = {
   [SupportedChainId.ETH_SEPOLIA]: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
