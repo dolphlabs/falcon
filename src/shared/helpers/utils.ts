@@ -32,13 +32,15 @@ const entitySecret = envConfig.circle.entityKey || generateEntitySecret();
 console.log("Generated Entity Secret:", entitySecret);
 
 async function registerEntitySecret() {
-  const apiKey = envConfig.circle.apiKeyProd;
+  const apiKey = isProd()
+    ? envConfig.circle.apiKeyProd
+    : envConfig.circle.apiKeyTest;
   try {
     const response = await registerEntitySecretCiphertext({
       apiKey,
       entitySecret,
     });
-    console.log("Entity Secret registered successfully:", response);
+    console.log("Entity Secret registered successfully:", response.data);
   } catch (error) {
     console.error("Error registering Entity Secret:", error);
     throw error;
@@ -50,9 +52,11 @@ async function registerEntitySecret() {
 
 export async function createTreasuryWallet(organisationName: string) {
   const client = initiateDeveloperControlledWalletsClient({
-    apiKey: envConfig.circle.apiKeyProd,
+    apiKey: isProd()
+      ? envConfig.circle.apiKeyProd
+      : envConfig.circle.apiKeyTest,
     entitySecret,
-    baseUrl: isDev()
+    baseUrl: isProd()
       ? "https://api.circle.com"
       : "https://api-sandbox.circle.com",
   });
@@ -64,7 +68,7 @@ export async function createTreasuryWallet(organisationName: string) {
   const walletSetId = walletSetResponse.data?.walletSet?.id;
 
   const walletsResponse = await client.createWallets({
-    blockchains: ["BASE", "SOL"],
+    blockchains: isProd() ? ["BASE", "SOL"] : ["BASE-SEPOLIA", "SOL-DEVNET"],
     // blockchains: ["SOL-DEVNET", "BASE-SEPOLIA"],
     count: 1,
     walletSetId,
@@ -81,9 +85,11 @@ export async function createUserWallet(
   blockchain: Blockchain
 ) {
   const client = initiateDeveloperControlledWalletsClient({
-    apiKey: envConfig.circle.apiKeyProd,
+    apiKey: isProd()
+      ? envConfig.circle.apiKeyProd
+      : envConfig.circle.apiKeyTest,
     entitySecret,
-    baseUrl: isDev()
+    baseUrl: isProd()
       ? "https://api.circle.com"
       : "https://api-sandbox.circle.com",
   });
@@ -111,14 +117,16 @@ export async function transferUSDC(
   destinationChain: string
 ) {
   const client = createCircleClient({
-    apiKey: envConfig.circle.apiKeyProd,
+    apiKey: isProd()
+      ? envConfig.circle.apiKeyProd
+      : envConfig.circle.apiKeyTest,
     entitySecret: entitySecret || envConfig.circle.entityKey,
   });
 
-  if (sourceChain === "SOL") {
+  if (sourceChain === "SOL" || "SOL-DEVNET") {
     // Solana-specific transfer logic
     const keypair = Keypair.fromSecretKey(
-      Buffer.from(envConfig.solana.key, "hex")
+      Buffer.from(envConfig.solana.key, "base64")
     ); // Load securely
     const provider = getAnchorConnection(keypair);
     const { messageTransmitterProgram, tokenMessengerMinterProgram } =
@@ -135,7 +143,7 @@ export async function transferUSDC(
 
     // Convert recipient address to bytes32 for EVM destination chains
     const recipientBytes32 =
-      destinationChain !== "SOL"
+      destinationChain !== "SOL" || "SOL-DEVNET"
         ? evmAddressToBytes32(recipientAddress)
         : solanaAddressToHex(recipientAddress);
 
@@ -177,7 +185,7 @@ export async function transferUSDC(
     const attestation = attestationResponse.messages[0].attestation;
 
     // If destination is Solana, mint on Solana; otherwise, mint on destination chain
-    if (destinationChain === "SOL") {
+    if (destinationChain === "SOL" || "SOL-DEVNET") {
       const nonce = decodeNonceFromMessage(message);
       const receivePdas = await getReceiveMessagePdas(
         { messageTransmitterProgram, tokenMessengerMinterProgram },
@@ -259,7 +267,7 @@ export async function transferUSDC(
       abiFunctionSignature: "depositForBurn(uint256,bytes32,uint32,address)",
       abiParameters: [
         amount,
-        destinationChain === "SOL"
+        destinationChain === "SOL" || "SOL-DEVNET"
           ? solanaAddressToHex(recipientAddress)
           : evmAddressToBytes32(recipientAddress),
         chainConfigs[destinationChain].destinationDomain,
@@ -287,7 +295,7 @@ export async function transferUSDC(
     const attestation = attestationResponse.messages[0].attestation;
 
     // Mint USDC on destination chain
-    if (destinationChain !== "SOL") {
+    if (destinationChain !== "SOL" || "SOL-DEVNET") {
       const mintResponse = await client.createContractExecutionTransaction({
         walletId: treasuryWalletId,
         contractAddress: chainConfigs[destinationChain].tokenMessenger,
@@ -384,7 +392,7 @@ export async function getWalletBalances(
   const client = initiateDeveloperControlledWalletsClient({
     apiKey: envConfig.circle.apiKeyProd,
     entitySecret,
-    baseUrl: isDev()
+    baseUrl: isProd()
       ? "https://api.circle.com"
       : "https://api-sandbox.circle.com",
   });

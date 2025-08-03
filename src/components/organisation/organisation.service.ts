@@ -28,7 +28,7 @@ import {
   getWalletBalances,
   transferUSDC,
 } from "@/shared/helpers/utils";
-import envConfig, { isDev } from "@/shared/configs/env.config";
+import envConfig, { isDev, isProd } from "@/shared/configs/env.config";
 import { v4 as uuidV4 } from "uuid";
 import { IToken, TokenModel } from "./token.model";
 import { InviteEmployeeDto } from "../user/user.dto";
@@ -455,13 +455,13 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
     }
     const solBalance = await this.fetchWalletBalance(
       organisation.wallet.solAddress,
-      "SOL",
+      isProd() ? "SOL" : "SOL-DEVNET",
       SOLUSDCAddress
     );
 
     const baseBalance = await this.fetchWalletBalance(
       organisation.wallet.baseAddress,
-      "BASE"
+      isProd() ? "BASE" : "BASE-SEPOLIA"
       // BaseUSDCAddress
     );
 
@@ -509,7 +509,8 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
       const today = new Date();
       const currentDay = today.getDate();
 
-      if (currentDay !== payDay) continue;
+      // Todo: uncomment this when done with test
+      // if (currentDay !== payDay) continue;
 
       const employees = await this.UserService.fetchUsers({
         org: organisation._id,
@@ -521,13 +522,13 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
       // Fetch current balances
       const solBalance = await this.fetchWalletBalance(
         organisation.wallet.solAddress,
-        "SOL",
+        isProd() ? "SOL" : "SOL-DEVNET",
         SOLUSDCAddress
       );
 
       const baseBalance = await this.fetchWalletBalance(
         organisation.wallet.baseAddress,
-        "BASE"
+        isProd() ? "BASE" : "BASE-SEPOLIA"
         // BaseUSDCAddress,
       );
 
@@ -538,6 +539,8 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
         const salary = parseFloat(employee.salary || "0.00");
 
         if (isNaN(salary) || salary <= 0) continue;
+
+        if (employee.role.includes(Admin)) continue;
 
         if (totalAvailable < salary + remainingAmount) {
           console.warn(
@@ -562,9 +565,9 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
         if (amountFromSol > 0) {
           await transferUSDC(
             organisation.wallet.solWalletId,
-            organisation.wallet.solAddress,
+            employee.walletAddress,
             amountFromSol.toString(),
-            "SOL",
+            isProd() ? "SOL" : "SOL-DEVNET",
             employee.chain
           );
         }

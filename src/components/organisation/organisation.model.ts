@@ -49,7 +49,7 @@ const OrganisationSchema = new Schema(
     },
     chain: {
       type: [String],
-      enum: ["SOL", "BASE"],
+      enum: ["SOL", "BASE", "SOL-DEVNET", "BASE-SEPOLIA"],
     },
     payDay: {
       type: Number,
