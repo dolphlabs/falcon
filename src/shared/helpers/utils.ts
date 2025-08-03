@@ -103,7 +103,7 @@ export async function createUserWallet(
   return walletsResponse.data?.wallets[0];
 }
 
-async function transferUSDC(
+export async function transferUSDC(
   treasuryWalletId: string,
   recipientAddress: string,
   amount: string,

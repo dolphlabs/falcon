@@ -145,4 +145,12 @@ export class OrganisationController extends DolphControllerHandler<Dolph> {
 
     SuccessResponse({ res, body: result });
   }
+
+  @Post("test-payroll")
+  @UseMiddleware(adminShield)
+  @UseMiddleware(authShield)
+  async testPayroll(@DRes() res: DResponse) {
+    await this.OrganisationService.processPayroll();
+    SuccessResponse({ res, body: { message: "Payroll processed manually" } });
+  }
 }

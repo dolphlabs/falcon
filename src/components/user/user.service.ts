@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Dolph,
   ForbiddenException,
+  NotFoundException,
 } from "@dolphjs/dolph/common";
 import { InjectMongo } from "@dolphjs/dolph/decorators";
 import { Model } from "mongoose";
@@ -96,6 +97,32 @@ export class UserService extends DolphServiceHandler<Dolph> {
     );
   }
 
+  async getUserWalletBalance(id: string) {
+    const user = await this.userModel.findById(id);
+
+    if (!user) throw new NotFoundException("user not found");
+
+    if (!user.walletId) {
+      throw new BadRequestException("No wallet associated with this account");
+    }
+    const balance = await this.fetchWalletBalance(
+      user.walletAddress,
+      user.chain,
+      user.tokenAddress
+    );
+
+    user.walletAmount = balance;
+
+    await user.save();
+
+    return {
+      message: "User balance fetched successfully",
+      data: {
+        totalBalance: parseFloat(balance).toFixed(4),
+      },
+    };
+  }
+
   private async fetchWalletBalance(
     address: string,
     blockchain: any,
@@ -110,5 +137,9 @@ export class UserService extends DolphServiceHandler<Dolph> {
 
   fetchUser(filter: any) {
     return this.userModel.findOne({ ...filter, isDeleted: false });
+  }
+
+  fetchUsers(filter: any) {
+    return this.userModel.find({ ...filter, isDeleted: false });
   }
 }

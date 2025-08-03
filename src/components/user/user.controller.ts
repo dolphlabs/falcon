@@ -58,4 +58,17 @@ export class UserController extends DolphControllerHandler<Dolph> {
 
     SuccessResponse({ res, body: employeeData(result, {} as IOrganisation) });
   }
+
+  @Get("balance")
+  @UseMiddleware(authShield)
+  async getWalletBalance(
+    @DRes() res: DResponse,
+    @DPayload() payload: IPayload
+  ) {
+    const result = await this.UserService.getUserWalletBalance(
+      payload.sub as string
+    );
+
+    SuccessResponse({ res, body: result });
+  }
 }

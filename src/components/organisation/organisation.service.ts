@@ -26,6 +26,7 @@ import { orgUserData } from "@/shared/helpers/serialise.helper";
 import {
   createTreasuryWallet,
   getWalletBalances,
+  transferUSDC,
 } from "@/shared/helpers/utils";
 import envConfig, { isDev } from "@/shared/configs/env.config";
 import { v4 as uuidV4 } from "uuid";
@@ -40,6 +41,7 @@ import {
   BaseUSDCAddress,
   SOLUSDCAddress,
 } from "@/shared/helpers/chains.helper";
+import cron from "node-cron";
 
 @InjectMongo("organisationModel", OrganisationModel)
 @InjectMongo("tokenModel", TokenModel)
@@ -57,6 +59,7 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
     this.MailSender = new MailSender();
     this.TokensService = new TokensService();
     this.entitySecret = envConfig.circle.entityKey || generateEntitySecret();
+    this.schedulePayrollCron();
   }
 
   async createOrg(dto: CreateOrgDto) {
@@ -441,7 +444,6 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
   }
 
   async getOrgBalance(orgId: string) {
-    const entitySecret = this.entitySecret;
     const organisation = await this.fetchOrg({ _id: orgId });
 
     if (!organisation) throw new NotFoundException("organisation not found");
@@ -451,23 +453,6 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
         "No wallet associated with this organisation"
       );
     }
-
-    const client = initiateDeveloperControlledWalletsClient({
-      apiKey: envConfig.circle.apiKeyProd,
-      entitySecret,
-      baseUrl: isDev()
-        ? "https://api.circle.com"
-        : "https://api-sandbox.circle.com",
-    });
-
-    const solWallet = await client.getWallet({
-      id: organisation.wallet.solWalletId,
-    });
-
-    const baseWallet = await client.getWallet({
-      id: organisation.wallet.baseWalletId,
-    });
-
     const solBalance = await this.fetchWalletBalance(
       organisation.wallet.solAddress,
       "SOL",
@@ -511,5 +496,120 @@ export class OrganisationService extends DolphServiceHandler<Dolph> {
 
   async fetchOrg(filter: any) {
     return this.organisationModel.findOne({ ...filter, isDeleted: false });
+  }
+
+  async processPayroll() {
+    const organisations = await this.organisationModel.find({
+      isDeleted: false,
+      isApproved: true,
+    });
+
+    for (const organisation of organisations) {
+      const payDay = organisation.payDay;
+      const today = new Date();
+      const currentDay = today.getDate();
+
+      if (currentDay !== payDay) continue;
+
+      const employees = await this.UserService.fetchUsers({
+        org: organisation._id,
+        isSuspended: false,
+      });
+
+      if (!employees.length) continue;
+
+      // Fetch current balances
+      const solBalance = await this.fetchWalletBalance(
+        organisation.wallet.solAddress,
+        "SOL",
+        SOLUSDCAddress
+      );
+
+      const baseBalance = await this.fetchWalletBalance(
+        organisation.wallet.baseAddress,
+        "BASE"
+        // BaseUSDCAddress,
+      );
+
+      const totalAvailable = parseFloat(solBalance) + parseFloat(baseBalance);
+
+      let remainingAmount = 0;
+      for (const employee of employees) {
+        const salary = parseFloat(employee.salary || "0.00");
+
+        if (isNaN(salary) || salary <= 0) continue;
+
+        if (totalAvailable < salary + remainingAmount) {
+          console.warn(
+            `Insufficient funds for ${employee.fullname} in organisation ${organisation.name}`
+          );
+          break;
+        }
+
+        let amountFromSol = 0;
+        let amountFromBase = 0;
+
+        if (parseFloat(solBalance) >= salary) {
+          amountFromSol = salary;
+        } else if (parseFloat(solBalance) > 0) {
+          amountFromSol = parseFloat(solBalance);
+          amountFromBase = salary - amountFromSol;
+        } else {
+          amountFromBase = salary;
+        }
+
+        // Perform transactions
+        if (amountFromSol > 0) {
+          await transferUSDC(
+            organisation.wallet.solWalletId,
+            organisation.wallet.solAddress,
+            amountFromSol.toString(),
+            "SOL",
+            employee.chain
+          );
+        }
+        // if (amountFromBase > 0) {
+        //   await this.transferFunds(
+        //     client,
+        //     organisation.wallet.baseWalletId,
+        //     employee.walletId,
+        //     amountFromBase.toString(),
+        //     "BASE"
+        //   );
+        // }
+
+        // Track total disbursed for this run
+        remainingAmount += salary;
+
+        // Update employee wallet amount
+        employee.walletAmount = (
+          parseFloat(employee.walletAmount || "0.00") + salary
+        ).toFixed(4);
+        await employee.save();
+
+        //   this.MailSender.sendPayrollNotification(
+        //     employee.email,
+        //     organisation.name,
+        //     salary
+        //   );
+        // }
+
+        // Update organisation balances (post-transaction update would require re-fetching)
+        return { message: "success" };
+      }
+    }
+  }
+
+  private schedulePayrollCron() {
+    cron.schedule(
+      "0 0 0 * * *",
+      async () => {
+        console.log("Running payroll process at midnight...");
+        await this.processPayroll();
+      },
+      {
+        timezone: "Africa/Lagos",
+      }
+    );
   }
 }

@@ -50,7 +50,7 @@ export const CHAIN_TO_CHAIN_NAME: Record<number, string> = {
 
 export const EthereumUSDCAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 export const AvalancheUSDCAddress =
-  "0xB97EF9e8734C71904dC006fc2d93eAA8d99f84eC";
+  "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E";
 export const LineaUSDCAddress = "0xA21943924Bf91167c1e6e0E88b9076D74e5088d1";
 export const ArbitrumUSDCAddress = "0xaf88d065e77c8cC223D8E79B95F0Cc232abCDA50";
 export const OptimismUSDCAddress = "0x0b2c639c533813f4aa9d7837caf62653d097fcc2";
