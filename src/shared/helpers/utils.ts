@@ -62,7 +62,7 @@ export async function createTreasuryWallet(organisationName: string) {
   });
 
   const walletSetResponse = await client.createWalletSet({
-    name: `${organisationName} - Payroll Treasury`,
+    name: `${organisationName} - Payroll Treasury Wallet`,
   });
 
   const walletSetId = walletSetResponse.data?.walletSet?.id;
