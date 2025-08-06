@@ -339,6 +339,8 @@ export async function transferUSDC(
         Object.keys(tokenMessengerMinterProgram.methods)
       );
 
+      console.log("Went through");
+
       const mintTx = await tokenMessengerMinterProgram.methods
         .handleReceiveFinalizedMessage(message, attestation) // Replace with correct method name from IDL
         .accounts({
