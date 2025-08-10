@@ -123,7 +123,7 @@ export class OrganisationController extends DolphControllerHandler<Dolph> {
     SuccessResponse({ res, body: result });
   }
 
-  @Delete("")
+  @Delete()
   @UseMiddleware(adminShield)
   @UseMiddleware(authShield)
   async deleteAccount(
